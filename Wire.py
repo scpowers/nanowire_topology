@@ -4,12 +4,13 @@ from Electrode import Electrode
 
 class StraightWire:
 
-    def __init__(self, coords):
+    def __init__(self, coords, index):
         # read in endpoint coordinates
         self.x1 = coords[0,0] # x coordinate of first endpoint
         self.y1 = coords[0,1] # y coordinate of first endpoint
         self.x2 = coords[1,0] # x coordinate of second endpoint
         self.y2 = coords[1,1] # y coordinate of second endpoint
+        self.index = index
         
         # initialize array of electrodes connected by this wire
         self.connectedElectrodes = []
@@ -19,6 +20,14 @@ class StraightWire:
         # row 1 is endpoint 1, row 2 is endpoint 2
         return [[self.x1, self.y1],
                 [self.x2, self.y2]]
+
+    # getter method for connected electrodes
+    def getConnectedElectrodes(self):
+        return self.connectedElectrodes
+
+    # getter method for index
+    def getIndex(self):
+        return self.index
         
     # method for printing useful info about the wire
     def __str__(self):
@@ -28,7 +37,7 @@ class StraightWire:
         
         ret = "Wire details:\n\tEndpoint 1: (" + str(self.x1) + ", " + str(self.y1) + ")" \
             + "\n\tEndpoint 2: (" + str(self.x2) + ", " + str(self.y2) + ")" + \
-            "\n\tConnected Electrodes: " + str(temp)
+            "\n\tConnected Electrodes: " + str(temp) + "\n\tIndex: " + str(self.index)
         return ret
 
     # check if electrodes in a list of electrodes touch this wire

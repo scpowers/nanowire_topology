@@ -18,6 +18,9 @@ class GeometricModel:
         self.length = self.alpha * (1 + self.numRows) # grid side length
         self.ElectrodeList = [] # list of Electrode objects
 
+        # generate electrodes
+        self.initializeElectrodes()
+
     # method for initializing the electrodes (universal across all sub-models)
     def initializeElectrodes(self):
         edgeBuffer = ( self.length - ( self.numRows - 1) * self.alpha ) / 2
@@ -25,8 +28,8 @@ class GeometricModel:
         for row in range(self.numRows):
             for col in range(self.numRows):
                 # determine x and y for this electrode
-                x = edgeBuffer + ( row * self.alpha )
-                y = edgeBuffer + ( col * self.alpha )
+                x = edgeBuffer + ( col * self.alpha )
+                y = edgeBuffer + ( row * self.alpha )
                 # create new Electrode object at the right coordinates (constructor) 
                 index = col + (row * self.numRows)
                 tempElectrode = Electrode(self.r_e, x, y, index)

@@ -1,7 +1,9 @@
+import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 from GeometricModel import GeometricModel
 from Wire import StraightWire
+from helpers import generateBipartiteGraph
 
 # StraightWireModel class: defines a type of GeometricModel that uses straight
 # lines to model the memristive nanowires
@@ -13,6 +15,9 @@ class StraightWireModel(GeometricModel):
         
         # initialize wire list
         self.Wires = []
+
+        # generate wires
+        self.generateWires()
     
     # generate wire models
     def generateWires(self):
@@ -36,11 +41,12 @@ class StraightWireModel(GeometricModel):
                     coords[point, 0] = self.length
 
             # create straight wire object
-            self.Wires.append(StraightWire(coords)) 
+            self.Wires.append(StraightWire(coords, wire)) 
             # update list of connected electrodes
             self.Wires[wire].checkIfConnected(self.ElectrodeList)
-            print(self.Wires[-1])
+            #print(self.Wires[-1])
 
+    # plot geometric model (electrodes and wires)
     def plotModel(self):
 
         # initialize figure
@@ -51,25 +57,74 @@ class StraightWireModel(GeometricModel):
         for electrode in range(self.num_e):
             coords = self.ElectrodeList[electrode].getCenter()
             rad = self.ElectrodeList[electrode].getRadius()
+            # add circle object
             circle = plt.Circle((coords[0], coords[1]), rad, color='r')
             ax.add_artist(circle)
 
+        # loop over wires
         for wire in range(self.num_w):
             coords = self.Wires[wire].getEndpoints()
             x1 = coords[0][0]
             y1 = coords[0][1]
             x2 = coords[1][0]
             y2 = coords[1][1]
-            if ( (x1 > 0 and x1 < self.length and y1 > 0 and y1 < self.length) or \
-                    (x2 > 0 and x2 < self.length and y2 > 0 and y2 < self.length) ):
-                print("found a problem: " + str(x1) + ", " + str(y1) + \
-                    "\n" + str(x2) + ", " + str(y2))
+            # plot lines based on two coordinates
             plt.plot([x1, x2], [y1, y2], color='blue')
 
-        plt.savefig('plot.png')
         plt.xlim(0, self.length)
         plt.ylim(0, self.length)
-        plt.show()
+        plt.savefig('GeometricModelPlot.png')
+        plt.close()
+        #plt.show()
+
+    # generate equivalent bipartite graph
+    def generateEquivalentBipartiteGraph(self):
+
+        # first, generate string labels for electrode nodes (need to be distinct from wire nodes)
+        e_nodes = []
+        for electrode in self.ElectrodeList:
+            e_nodes.append("e" + str(electrode.getIndex()))
+        #print(e_nodes)
+
+        # next, generate string labels for wire nodes
+        # and also generate edges simultaneously
+        w_nodes = [] # list of wire node labels
+        edges_list = [] # list of edges
+        for wire in self.Wires:
+            # only care if the wire connects 2 or more electrodes
+            numConnected = len(wire.getConnectedElectrodes())
+            if numConnected >= 2:
+                w_nodes.append("w" + str(wire.getIndex()))
+
+                # build edges
+                tempList = wire.getConnectedElectrodes()
+                for electrode in range(numConnected):
+                    edges_list.append( ("e" + str(tempList[electrode].getIndex()), w_nodes[-1]))
+                
+        #print(w_nodes)
+        #print(edges_list)
+        """
+        store numbers of valid wires and edges for generating
+        random bipartite graphs later. Note: assumed that graph
+        is connected (no isolated nodes), and since only wires that
+        connected multiple electrodes were selected, the only way this
+        assumption is wrong is if an electrode is not connected to another
+        by any wires. High probability that this never happens, so numValidElectrodes
+        is just self.num_e
+        
+        """
+        self.numValidWires = len(w_nodes)
+        self.numValidEdges = len(edges_list)
+        #print("Number of valid wires: ", self.numValidWires)
+        #print("Number of valid edges: ", self.numValidEdges)
+
+        # generate bipartite graph
+        [graph, _] = generateBipartiteGraph(e_nodes, w_nodes, edges_list)
+        return [graph, _]
+
+        
+            
+        
 
         
         
