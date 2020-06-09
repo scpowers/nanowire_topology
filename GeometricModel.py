@@ -17,6 +17,7 @@ class GeometricModel:
         self.num_w = self.density * self.numRows # number of wires
         self.length = self.alpha * (1 + self.numRows) # grid side length
         self.ElectrodeList = [] # list of Electrode objects
+        self.Wires = []
 
         # generate electrodes
         self.initializeElectrodes()

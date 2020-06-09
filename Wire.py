@@ -1,4 +1,5 @@
 import math
+import numpy as np
 from Electrode import Electrode
 # Wire class - defines attributes of various wire models
 
@@ -50,6 +51,7 @@ class StraightWire:
             # get center coordinates of the electrode
             c = electrode.getCenter()
 
+            # see paper for equation
             num = abs( c[0] * (self.y2 - self.y1) - c[1] * (self.x2 - self.x1) + \
                     self.x2 * self.y1 - self.y2 * self.x1 )
             denom = math.sqrt( (self.x2 - self.x1) ** 2 + (self.y2 - self.y1) \
@@ -61,20 +63,125 @@ class StraightWire:
                 self.connectedElectrodes.append(electrode)
 
 
-
-
+# class describing the arced wire model
 class ArcWire(StraightWire):
 
-    def __init__(self, x1, y1, x2, y2, rad):
+    def __init__(self, coords, index):
         # call inherited constructor
-        StraightWire.__init__(self, x1, y1, x2, y2)
-        # add new attributes
-        self.rad = rad
+        StraightWire.__init__(self, coords, index)
 
         # derived attributes
-        # call findCenter function here
+        self.chooseRadius()
+        self.findCenter()
+
+
+    # define helper method for randomly choosing wire arc radius
+    def chooseRadius(self):
+        Euclid_dist = math.sqrt( (self.x2 - self.x1) ** 2 + (self.y2 - \
+                self.y1) ** 2 )
+        lowerBound = Euclid_dist / 2 # from paper
+        upperBound = 3 * Euclid_dist # from paper
+        self.r_w = np.random.uniform(lowerBound, upperBound)
 
     # define helper method for computing center coordinates
-    #def findCenter(self):
-        # to do...see paper
+    def findCenter(self):
+
+        # intermediate variables
+        x_a = (self.x2 - self.x1) / 2
+        y_a = (self.y2 - self.y1) / 2
+        a = math.sqrt( x_a ** 2 + y_a ** 2 )
+        b = math.sqrt( self.r_w ** 2 - a ** 2 )
+
+        # randomly choose one of the two possible centers
+        x_rand = np.random.randint(2) # binary choice of 0 or 1
+        #print("random value: ", x_rand)
+
+        # assign values based on random choice above
+        if (x_rand == 0):
+            self.x_c = self.x1 + x_a + (b * y_a / a)
+            self.y_c = self.y1 + y_a - (b * x_a / a)
+        else:
+            self.x_c = self.x1 + x_a - (b * y_a / a)
+            self.y_c = self.y1 + y_a + (b * x_a / a)
+
+    # return center and radius for plotting
+    def getPlottingInfo(self):
+        return [self.x_c, self.y_c, self.r_w]
+
+    # override inherited method checking for connected electrodes
+    def checkIfConnected(self, electrodes):
+        '''
+        # compute intermediate theta_s angles (see paper)
+        theta_s_x = math.acos( (self.x1 - self.x_c) / self.r_w )
+        theta_s_y = math.acos( (self.y1 - self.y_c) / self.r_w )
+        # (experimental) compute intermediate theta_f angles
+        theta_f_x = math.acos( (self.x2 - self.x_c) / self.r_w )
+        theta_f_y = math.acos( (self.y2 - self.y_c) / self.r_w )
+
+        # find theta_s from table (see paper)
+        if (theta_s_x >= 0 and theta_s_x < math.pi / 2 and \
+                theta_s_y >= 0 and theta_s_y < math.pi / 2):
+            theta_s = theta_s_x
+        elif (theta_s_x >= 0 and theta_s_x < math.pi / 2 and \
+                theta_s_y >= -math.pi / 2 and theta_s_y < 0):
+            theta_s = 2 * math.pi + theta_s_y
+        elif (theta_s_x >= math.pi / 2 and theta_s_x < math.pi and \
+                theta_s_y >= 0 and theta_s_y < math.pi / 2):
+            theta_s = theta_s_x
+        elif (theta_s_x >= math.pi / 2 and theta_s_x < math.pi and \
+                theta_s_y >= -math.pi / 2 and theta_s_y < 0):
+            theta_s = math.pi - theta_s_y
+        else:
+            theta_s = math.pi
+            #print("entered unnatural else case on theta_s")
+
+        # (experimental) find theta_f from table (see paper)
+        if (theta_f_x >= 0 and theta_f_x < math.pi / 2 and \
+                theta_f_y >= 0 and theta_f_y < math.pi / 2):
+            theta_f = theta_f_x
+        elif (theta_f_x >= 0 and theta_f_x < math.pi / 2 and \
+                theta_f_y >= -math.pi / 2 and theta_f_y < 0):
+            theta_f = 2 * math.pi + theta_f_y
+        elif (theta_f_x >= math.pi / 2 and theta_f_x < math.pi and \
+                theta_f_y >= 0 and theta_f_y < math.pi / 2):
+            theta_f = theta_f_x
+        elif (theta_f_x >= math.pi / 2 and theta_f_x < math.pi and \
+                theta_f_y >= -math.pi / 2 and theta_f_y < 0):
+            theta_f = math.pi - theta_f_y
+        else:
+            theta_f = math.pi
+            #print("entered unnatural else case on theta_f")
+
+        # switch start and finish angles, if necessary)
+        if (theta_s > theta_f):
+            temp = theta_s
+            theta_s = theta_f
+            theta_f = temp
+        
+        #print("Theta_s: ", theta_s)
+        #print("Theta_f: ", theta_f)
+        '''
+
+        # now loop over electrodes
+        for electrode in electrodes: 
+            # for comparison purposes
+            rad = electrode.getRadius()
+
+            # get center coordinates of the electrode
+            [x_e, y_e] = electrode.getCenter()
+
+            # compute distance between arc center and electrode center
+            dist = math.sqrt( (x_e - self.x_c) ** 2 + (y_e - self.y_c) ** 2 )
+            
+            # evaluate condition
+            if ( dist >= self.r_w - rad and dist <= self.r_w + rad ):
+                self.connectedElectrodes.append(electrode)
+
+                
+            
+        
+        
+
+
+
         
