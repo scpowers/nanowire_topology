@@ -1,5 +1,7 @@
 import math
+from scipy.ndimage import gaussian_filter
 import numpy as np
+import colorednoise as cn
 from Electrode import Electrode
 # Wire class - defines attributes of various wire models
 
@@ -66,6 +68,7 @@ class StraightWire:
 # class describing the arced wire model
 class ArcWire(StraightWire):
 
+    # call inherited constructor
     def __init__(self, coords, index):
         # call inherited constructor
         StraightWire.__init__(self, coords, index)
@@ -110,59 +113,8 @@ class ArcWire(StraightWire):
 
     # override inherited method checking for connected electrodes
     def checkIfConnected(self, electrodes):
-        '''
-        # compute intermediate theta_s angles (see paper)
-        theta_s_x = math.acos( (self.x1 - self.x_c) / self.r_w )
-        theta_s_y = math.acos( (self.y1 - self.y_c) / self.r_w )
-        # (experimental) compute intermediate theta_f angles
-        theta_f_x = math.acos( (self.x2 - self.x_c) / self.r_w )
-        theta_f_y = math.acos( (self.y2 - self.y_c) / self.r_w )
 
-        # find theta_s from table (see paper)
-        if (theta_s_x >= 0 and theta_s_x < math.pi / 2 and \
-                theta_s_y >= 0 and theta_s_y < math.pi / 2):
-            theta_s = theta_s_x
-        elif (theta_s_x >= 0 and theta_s_x < math.pi / 2 and \
-                theta_s_y >= -math.pi / 2 and theta_s_y < 0):
-            theta_s = 2 * math.pi + theta_s_y
-        elif (theta_s_x >= math.pi / 2 and theta_s_x < math.pi and \
-                theta_s_y >= 0 and theta_s_y < math.pi / 2):
-            theta_s = theta_s_x
-        elif (theta_s_x >= math.pi / 2 and theta_s_x < math.pi and \
-                theta_s_y >= -math.pi / 2 and theta_s_y < 0):
-            theta_s = math.pi - theta_s_y
-        else:
-            theta_s = math.pi
-            #print("entered unnatural else case on theta_s")
-
-        # (experimental) find theta_f from table (see paper)
-        if (theta_f_x >= 0 and theta_f_x < math.pi / 2 and \
-                theta_f_y >= 0 and theta_f_y < math.pi / 2):
-            theta_f = theta_f_x
-        elif (theta_f_x >= 0 and theta_f_x < math.pi / 2 and \
-                theta_f_y >= -math.pi / 2 and theta_f_y < 0):
-            theta_f = 2 * math.pi + theta_f_y
-        elif (theta_f_x >= math.pi / 2 and theta_f_x < math.pi and \
-                theta_f_y >= 0 and theta_f_y < math.pi / 2):
-            theta_f = theta_f_x
-        elif (theta_f_x >= math.pi / 2 and theta_f_x < math.pi and \
-                theta_f_y >= -math.pi / 2 and theta_f_y < 0):
-            theta_f = math.pi - theta_f_y
-        else:
-            theta_f = math.pi
-            #print("entered unnatural else case on theta_f")
-
-        # switch start and finish angles, if necessary)
-        if (theta_s > theta_f):
-            temp = theta_s
-            theta_s = theta_f
-            theta_f = temp
-        
-        #print("Theta_s: ", theta_s)
-        #print("Theta_f: ", theta_f)
-        '''
-
-        # now loop over electrodes
+        # loop over electrodes
         for electrode in electrodes: 
             # for comparison purposes
             rad = electrode.getRadius()
@@ -177,11 +129,93 @@ class ArcWire(StraightWire):
             if ( dist >= self.r_w - rad and dist <= self.r_w + rad ):
                 self.connectedElectrodes.append(electrode)
 
-                
+# class describing the pink noise wire model
+class PinkNoiseWire(StraightWire):
+
+    # define new constructor
+    def __init__(self, index, numPoints):
             
+        # set wire index
+        self.index = index
         
+        # initialize array of electrodes connected by this wire
+        self.connectedElectrodes = []
         
+        # new attributes
+        self.numPoints = numPoints
 
+        # called methods for derived attributes
+        # add them here...these calls must define
+        # all behavior of the wire
+        self.generatePinkNoise()
 
+    # method for generating pink noise points for this wire
+    def generatePinkNoise(self):
+        # using colorednoise Python package to generate pink noise
+        # beta = 1 for pink noise
+        self.rawPoints = cn.powerlaw_psd_gaussian(1, self.numPoints)
 
+    # setter method for setting rescale points
+    def setScaledPoints(self, length):
+
+        # rescale raw noise (y-values)
+        tempMin = min(self.rawPoints)
+        tempMax = max(self.rawPoints)
+        # copy the raw points
+        self.scaledPoints = self.rawPoints[:]
+        for point in self.scaledPoints:
+            point = (length * (point - tempMin)) / (tempMax - tempMin)
+
+        # set scaled x values while you're at it
+        self.scaledXPoints = np.linspace(0, length, len(self.scaledPoints))
+
+        # do secondary transformation of y values
+        for point in self.scaledPoints:
+            r = np.random.uniform()
+            point = point * (r ** 3) # from paper
+
+        # do tertiary transformation of y values
+        tempMin = min(self.scaledPoints)
+        tempMax = max(self.scaledPoints)
+        for point in self.scaledPoints:
+            v = np.random.uniform(tempMin, tempMax)
+            point = point + v
+
+        # feed y-values through Gaussian filter function (per paper)
+        # guess 1 for SD..not listed in paper
+        self.scaledPoints = gaussian_filter(self.scaledPoints, sigma=1)
+
+        # fit quintic polynomial to data
+        poly_coeff = np.polyfit(self.scaledXPoints, self.scaledPoints, 5)
+
+        # store the function output at each x in place of the scaled y-values
+        for i in range(self.numPoints):
+            self.scaledPoints[i] = self.quintic(poly_coeff, self.scaledXPoints[i])
+            
+        # rotate the fitted function about an arbitrary point by a random theta
+        # they chose the rotation point (l/2, l/2)
+        theta = np.random.uniform(0, 2 * math.pi)
+        x_r = length / 2
+        y_r = length / 2
+        self.x_rotated = np.zeros(self.numPoints)
+        self.y_rotated = np.zeros(self.numPoints)
+        for i in range(self.numPoints):
+            self.x_rotated[i] = (self.scaledXPoints[i] - x_r) * math.cos(theta) - \
+                    (self.scaledPoints[i] - y_r) * math.sin(theta) + x_r
+            self.y_rotated[i] = (self.scaledXPoints[i] - x_r) * math.sin(theta) + \
+                    (self.scaledPoints[i] - y_r) * math.cos(theta) + y_r
+
+        
+    # helper function for the quintic polynomial
+    def quintic(self, coeff_vec, x_in):
+        return coeff_vec[0] * (x_in ** 5) + coeff_vec[1] * (x_in ** 4) + coeff_vec[2] * \
+                (x_in ** 3) + coeff_vec[3] * (x_in ** 2) + coeff_vec[4] * (x_in) + coeff_vec[5]
+
+    # getter for final rotated x points
+    def getRotatedXPoints(self):
+        return self.x_rotated
+
+    # getter for final rotated y points
+    def getRotatedYPoints(self):
+        return self.y_rotated
         

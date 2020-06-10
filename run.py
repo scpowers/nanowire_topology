@@ -14,9 +14,12 @@ r_e = 0.4 # electrode radius
 alpha = 1 # distance between electrode centers
 density = 30 # wire density constant
 
+# specific for pink noise model
+numPointsPerWire = 201 # from paper
+
 # sweep parameters for the square root of the number of electrodes
 num_e_min = 3
-num_e_max = 15
+num_e_max = 3
 
 # initialize array for small world coefficient parameters
 sigma_array = []
@@ -26,22 +29,22 @@ for root_num_e in range(num_e_min, num_e_max + 1):
     
     print("working on root_num_e = ", root_num_e)
     # initialize geometric model
-    model = ArcWireModel(density, r_e, alpha, root_num_e ** 2)
+    model = PinkNoiseModel(density, r_e, alpha, root_num_e ** 2, numPointsPerWire)
     # plot geometric model
     model.plotModel()
     # generate equivalent bipartite graph
-    [equivalentGraph, e_nodes] = model.generateEquivalentBipartiteGraph()
+    #[equivalentGraph, e_nodes] = model.generateEquivalentBipartiteGraph()
     # generate random bipartite graph with the same node and edge counts
-    [randomGraph, rand_e_nodes] = generateRandomBipartiteGraph(model.num_e, 
-            model.numValidWires, model.numValidEdges)
+    #[randomGraph, rand_e_nodes] = generateRandomBipartiteGraph(model.num_e, 
+            #model.numValidWires, model.numValidEdges)
     # get average shortest path length and square clustering coefficient for both graphs
-    [L, C] = analyzeBipartiteGraph(equivalentGraph, e_nodes)
-    [L_r, C_r] = analyzeBipartiteGraph(randomGraph, rand_e_nodes)
+    #[L, C] = analyzeBipartiteGraph(equivalentGraph, e_nodes)
+    #[L_r, C_r] = analyzeBipartiteGraph(randomGraph, rand_e_nodes)
 
     # compute small world coefficient
-    sigma_array.append(computeSmallWorldCoefficient(L, C, L_r, C_r))
+    #sigma_array.append(computeSmallWorldCoefficient(L, C, L_r, C_r))
 
 # plot small world coefficient versus square root of electrode count
-plotSmallWorldSweep(sigma_array, range(num_e_min, num_e_max + 1))
+#plotSmallWorldSweep(sigma_array, range(num_e_min, num_e_max + 1))
 
 
