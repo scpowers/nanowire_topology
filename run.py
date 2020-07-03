@@ -5,21 +5,23 @@ sys.path.append(os.getcwd())
 
 # run.py - file to actually run
 from GeometricModel import GeometricModel
-from StraightWireModel import *
+from StraightWireModel import StraightWireModel
+from ArcWireModel import ArcWireModel
+from PinkNoiseModel import PinkNoiseModel
 from Electrode import Electrode
 from helpers import *
 
 # model parameters
 r_e = 0.4 # electrode radius
 alpha = 1 # distance between electrode centers
-density = 30 # wire density constant
+density = 1 # wire density constant
 
 # specific for pink noise model
 numPointsPerWire = 201 # from paper
 
 # sweep parameters for the square root of the number of electrodes
-num_e_min = 3
-num_e_max = 3
+num_e_min = 2
+num_e_max = 2
 
 # initialize array for small world coefficient parameters
 sigma_array = []
@@ -29,7 +31,7 @@ for root_num_e in range(num_e_min, num_e_max + 1):
     
     print("working on root_num_e = ", root_num_e)
     # initialize geometric model
-    model = PinkNoiseModel(density, r_e, alpha, root_num_e ** 2, numPointsPerWire)
+    model = PinkNoiseModel(density, r_e, alpha, root_num_e ** 2, 201)
     # plot geometric model
     model.plotModel()
     # generate equivalent bipartite graph

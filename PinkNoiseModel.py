@@ -31,13 +31,12 @@ class PinkNoiseModel(StraightWireModel):
 
             # set scaled points (both x and y) and apply another transformation
             # on the y-values (see paper)
-            newWire.setScaledPoints(self.length)
+            newWire.setScaledPoints(self.length, self.ElectrodeList)
 
             # add wire to list
             self.Wires.append(newWire)
 
-            # update list of connected electrodes
-            # implement later
+            print(self.Wires[wire])
 
     # override plot method for geometric model (electrodes and wires)
     def plotModel(self):
