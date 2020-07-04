@@ -5,6 +5,7 @@ import colorednoise as cn
 from Electrode import Electrode
 import matplotlib.pyplot as plt
 from scipy.optimize import root_scalar 
+import copy
 # Wire class - defines attributes of various wire models
 
 class StraightWire:
@@ -252,8 +253,9 @@ class PinkNoiseWire(StraightWire):
             self.scaledPoints[i] = self.quintic(self.scaledXPoints[i])
             
         # experimental: add shift to curve to create better distribution
-        y_rand = np.random.uniform(-1 * length / 2, 0)
-        self.scaledPoints = self.scaledPoints  + y_rand
+        self.y_rand = np.random.uniform(-1 * length / 2, 0)
+        self.scaledPoints = self.scaledPoints  + self.y_rand
+        print("y_rand before: ", self.y_rand)
 
             
         # rotate the fitted function about an arbitrary point by a random theta
@@ -266,6 +268,8 @@ class PinkNoiseWire(StraightWire):
         # don't rotate for now
         #self.x_rotated = self.scaledXPoints
         #self.y_rotated = self.scaledPoints
+        #self.theta = 0
+        print("quintic roots before: ", self.poly_coeff)
         #print("After rotation:")
         #print("x min/max: ", min(self.x_rotated), " ", max(self.x_rotated))
         #print("y min/max: ", min(self.y_rotated), " ", max(self.y_rotated))
@@ -279,7 +283,8 @@ class PinkNoiseWire(StraightWire):
 
         # check for electrode connectivity while you have access to the
         # coefficient array from the polynomial fit
-        self.checkIfConnected(electrodes, self.poly_coeff)
+        print("test point: ", self.quintic(0.5) + self.y_rand)
+        self.checkIfConnected(electrodes)
                 
     # helper function for rotating points about another point by an angle
     def rotateXY(self, x, y, x_r, y_r, theta):
@@ -318,7 +323,7 @@ class PinkNoiseWire(StraightWire):
         return self.y_rotated
         
     # override inherited method checking for connected electrodes
-    def checkIfConnected(self, electrodes, coeff_vec):
+    def checkIfConnected(self, electrodes):
         # loop over the list of electrodes
         for electrode in electrodes:
             # get coordinates of the electrode center
@@ -326,7 +331,7 @@ class PinkNoiseWire(StraightWire):
             # get electrode radius
             rad_e = electrode.getRadius()
 
-            """
+            #"""
             # get roots of polynomial
             #rootSol = root_scalar(self.d_squared, method='secant', x0=0, x1=0.01) 
             #root = rootSol.root
@@ -341,10 +346,14 @@ class PinkNoiseWire(StraightWire):
             for root in roots:
                 # get unrotated y
                 y_temp = self.quintic(root)
+                y_temp = y_temp + self.y_rand
 
                 # get rotated x and y
                 x_rot, y_rot = self.rotateXY([root], [y_temp],
                         self.x_r, self.y_r, self.theta)
+                print("candidate rotated points for electrode at:")
+                print(self.x_e, ", ", self.y_e, ": ")
+                print("x_rot, y_rot: ", x_rot, ", ", y_rot)
 
                 # compute distance between electrode center
                 # and rotated x and y from root
@@ -359,7 +368,8 @@ class PinkNoiseWire(StraightWire):
                     # no need to check other roots for this 
                     # same electrode
                     break
-                """
+                #"""
+            """
             for i in range(self.numPoints):
                 if (self.x_rotated[i] <= self.x_e + rad_e and
                         self.x_rotated[i] >= self.x_e - rad_e and
@@ -372,6 +382,7 @@ class PinkNoiseWire(StraightWire):
                     print("(", self.x_e, ", ", self.y_e, ")")
                     print("with radius ", rad_e)
                     break
+            """
                     
 
     # define polynomial to find roots of for distance calculation
@@ -435,15 +446,16 @@ class PinkNoiseWire(StraightWire):
         # return the roots of this polynomial
         return real_roots
     """
+    #"""
     def g(self):
         # possibly switch terms in parenthesis in second term
-        a = (self.x_r - self.x_e) * math.cos(self.theta) + (self.y_r - self.y_e) * \
+        a = (self.x_r - self.x_e) * math.cos(self.theta) + (self.y_e - self.y_r) * \
                 math.sin(self.theta) - self.x_r
                 
         b = (self.y_r - self.y_e) * math.cos(self.theta) + (self.x_r - self.x_e) * \
                 math.sin(self.theta) - self.y_r
 
-        y_term = self.poly_coeff[:]
+        y_term = copy.deepcopy(self.poly_coeff)
         # add beta term to constant coefficient
         y_term[5] = y_term[5] + b
 
@@ -458,7 +470,7 @@ class PinkNoiseWire(StraightWire):
 
         # now add the left terms to the resulting coefficients
         # constant term:
-        product_coeff[9] = product_coeff[9] + b
+        product_coeff[9] = product_coeff[9] + a
         # x term
         product_coeff[8] = product_coeff[8] + 1
         
@@ -470,11 +482,9 @@ class PinkNoiseWire(StraightWire):
         # only keep its real roots
         real_roots = [i.real for i in roots if abs(i.imag) < 0.00001]
         print("real roots: ", real_roots)
-        print("check that each should return g = 0")
-        for root in real_roots:
-            print(g_poly(root))
         # return the roots of this polynomial
         return real_roots
+    #"""
                 
 
     # define function as part of minimization scheme
