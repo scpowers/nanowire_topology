@@ -4,7 +4,7 @@ import numpy as np
 import colorednoise as cn
 from Electrode import Electrode
 import matplotlib.pyplot as plt
-from scipy.optimize import root_scalar 
+from scipy.optimize import minimize 
 import copy
 # Wire class - defines attributes of various wire models
 
@@ -255,7 +255,6 @@ class PinkNoiseWire(StraightWire):
         # experimental: add shift to curve to create better distribution
         self.y_rand = np.random.uniform(-1 * length / 2, 0)
         self.scaledPoints = self.scaledPoints  + self.y_rand
-        print("y_rand before: ", self.y_rand)
 
             
         # rotate the fitted function about an arbitrary point by a random theta
@@ -269,7 +268,6 @@ class PinkNoiseWire(StraightWire):
         #self.x_rotated = self.scaledXPoints
         #self.y_rotated = self.scaledPoints
         #self.theta = 0
-        print("quintic roots before: ", self.poly_coeff)
         #print("After rotation:")
         #print("x min/max: ", min(self.x_rotated), " ", max(self.x_rotated))
         #print("y min/max: ", min(self.y_rotated), " ", max(self.y_rotated))
@@ -283,7 +281,6 @@ class PinkNoiseWire(StraightWire):
 
         # check for electrode connectivity while you have access to the
         # coefficient array from the polynomial fit
-        print("test point: ", self.quintic(0.5) + self.y_rand)
         self.checkIfConnected(electrodes)
                 
     # helper function for rotating points about another point by an angle
@@ -333,9 +330,9 @@ class PinkNoiseWire(StraightWire):
 
             #"""
             # get roots of polynomial
-            #rootSol = root_scalar(self.d_squared, method='secant', x0=0, x1=0.01) 
-            #root = rootSol.root
-            roots = self.g()
+            rootSol = minimize(self.d_squared, method='Nelder-Mead', x0=0) 
+            roots = rootSol.x
+            #roots = self.g()
             if len(roots) == 0:
                 print("no real roots found!")
             
@@ -351,15 +348,15 @@ class PinkNoiseWire(StraightWire):
                 # get rotated x and y
                 x_rot, y_rot = self.rotateXY([root], [y_temp],
                         self.x_r, self.y_r, self.theta)
-                print("candidate rotated points for electrode at:")
-                print(self.x_e, ", ", self.y_e, ": ")
-                print("x_rot, y_rot: ", x_rot, ", ", y_rot)
+                #print("candidate rotated points for electrode at:")
+                #print(self.x_e, ", ", self.y_e, ": ")
+                #print("x_rot, y_rot: ", x_rot, ", ", y_rot)
 
                 # compute distance between electrode center
                 # and rotated x and y from root
                 dist = math.sqrt( (x_rot[0] - self.x_e) ** 2 + \
                         (y_rot[0] - self.y_e) ** 2 )
-                print("distance to this electrode: ", dist)
+                #print("distance to this electrode: ", dist)
 
                 # check condition
                 if dist <= rad_e:
@@ -446,7 +443,7 @@ class PinkNoiseWire(StraightWire):
         # return the roots of this polynomial
         return real_roots
     """
-    #"""
+    """
     def g(self):
         # possibly switch terms in parenthesis in second term
         a = (self.x_r - self.x_e) * math.cos(self.theta) + (self.y_e - self.y_r) * \
@@ -478,10 +475,10 @@ class PinkNoiseWire(StraightWire):
         g_poly = np.poly1d(product_coeff)
         # get its roots
         roots = g_poly.r
-        print("all roots: ", roots)
+        #print("all roots: ", roots)
         # only keep its real roots
-        real_roots = [i.real for i in roots if abs(i.imag) < 0.00001]
-        print("real roots: ", real_roots)
+        real_roots = [i.real for i in roots if abs(i.imag) < 0.01]
+        #print("real roots: ", real_roots)
         # return the roots of this polynomial
         return real_roots
     #"""
@@ -497,14 +494,15 @@ class PinkNoiseWire(StraightWire):
                 (y_temp - self.y_r) * math.cos(self.theta) + self.y_r
         return r_y
 
-    # now the functiont to minimize (square of distance)
+    # now the function to minimize (square of distance)
     def d_squared(self, x):
         # get unrotated y coordinate
         y_temp = self.quintic(x)
+        y_temp = y_temp + self.y_rand
         # get rotated points
         rx_temp, ry_temp = self.rotateXY([x], [y_temp], 
                 self.x_r, self.y_r, self.theta)
-        return (x - self.x_e) ** 2 + (self.rotateY(x) - self.y_e) ** 2
+        return (rx_temp[0] - self.x_e) ** 2 + (ry_temp[0] - self.y_e) ** 2
         
         
 

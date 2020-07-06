@@ -71,8 +71,8 @@ class StraightWireModel(GeometricModel):
         plt.xlim(0, self.length)
         plt.ylim(0, self.length)
         plt.savefig('GeometricModelPlot.png')
-        plt.close()
-        #plt.show()
+        #plt.close()
+        plt.show()
 
     # generate equivalent bipartite graph
     def generateEquivalentBipartiteGraph(self):
@@ -118,4 +118,65 @@ class StraightWireModel(GeometricModel):
         # generate bipartite graph
         [graph, _] = generateBipartiteGraph(e_nodes, w_nodes, edges_list)
         return [graph, _]
+    
+    # generate equivalent bipartite graph
+    def generateGraph(self):
+
+        # initialize graph
+        g = nx.Graph()
+
+        # add electrode nodes
+        for electrode in self.ElectrodeList:
+            i = electrode.getIndex()
+            x = i % (math.sqrt(self.num_e))
+            y = i // (math.sqrt(self.num_e))
+            g.add_node(i, pos=(x,y))
+            g.add_node(i)
+        
+        # add wire segments
+        for wire in self.Wires:
+            # only care if the wire connects 2 or more electrodes
+            e_list = wire.getConnectedElectrodes()
+            numConnected = len(e_list)
+            if numConnected >= 2:
+                # outer loop: node 1
+                # don't need to worry about last electrode,
+                # all possible connections will have been made already
+                for e1 in range(numConnected - 1):
+                    # inner loop: node 2
+                    for e2 in range(e1, numConnected):
+                        g.add_edge(e_list[e1].getIndex(), e_list[e2].getIndex())
+        
+        # draw graph figure
+        pos = nx.get_node_attributes(g, 'pos')
+        nx.draw(g,pos, with_labels=True)
+        #plt.show()
+        plt.close()
+        
+        # return graph object
+        return g
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
 

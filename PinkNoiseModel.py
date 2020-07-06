@@ -36,7 +36,7 @@ class PinkNoiseModel(StraightWireModel):
             # add wire to list
             self.Wires.append(newWire)
 
-            print(self.Wires[wire])
+            #print(self.Wires[wire])
 
     # override plot method for geometric model (electrodes and wires)
     def plotModel(self):
