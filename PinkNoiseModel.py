@@ -63,7 +63,7 @@ class PinkNoiseModel(StraightWireModel):
         plt.ylim(0, self.length)
         plt.savefig('GeometricModelPlot.png')
         #plt.close()
-        plt.show()
+        #plt.show()
         
         
 

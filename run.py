@@ -39,25 +39,25 @@ for root_num_e in range(num_e_min, num_e_max + 1):
     # plot geometric model
     model.plotModel()
     # generate equivalent bipartite graph
-    #[equivalentGraph, e_nodes] = model.generateEquivalentBipartiteGraph()
+    [equivalentGraph, e_nodes] = model.generateEquivalentBipartiteGraph()
     # generate random bipartite graph with the same node and edge counts
-    #[randomGraph, rand_e_nodes] = generateRandomBipartiteGraph(model.num_e, 
-    #        model.numValidWires, model.numValidEdges)
+    [randomGraph, rand_e_nodes] = generateRandomBipartiteGraph(model.num_e, 
+            model.numValidWires, model.numValidEdges)
     # get average shortest path length and square clustering coefficient for both graphs
-    #[L, C] = analyzeBipartiteGraph(equivalentGraph, e_nodes)
-    #[L_r, C_r] = analyzeBipartiteGraph(randomGraph, rand_e_nodes)
+    [L, C] = analyzeBipartiteGraph(equivalentGraph, e_nodes)
+    [L_r, C_r] = analyzeBipartiteGraph(randomGraph, rand_e_nodes)
 
     # compute small world coefficient
-    #sigma_array.append(computeSmallWorldCoefficient(L, C, L_r, C_r))
+    sigma_array.append(computeSmallWorldCoefficient(L, C, L_r, C_r))
 
 
 # plot small world coefficient versus square root of electrode count
-#plotSmallWorldSweep(sigma_array, range(num_e_min, num_e_max + 1))
+plotSmallWorldSweep(sigma_array, range(num_e_min, num_e_max + 1))
 #"""
 
 """
 # create large network first
-model = ArcWireModel(density, r_e, alpha, 200 ** 2)
+model = PinkNoiseModel(density, r_e, alpha, 10 ** 2, numPointsPerWire)
 # plot model
 model.plotModel()
 # generate equivalent bipartite graph
@@ -84,5 +84,5 @@ print(N_vec)
 plt.loglog(r_vec, N_vec)
 plt.xlabel('r')
 plt.ylabel('N(r)')
-plt.show()
+plt.savefig('N_vs_r_plot.png')
 #"""
