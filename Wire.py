@@ -183,76 +183,25 @@ class PinkNoiseWire(StraightWire):
         self.scaledXPoints = np.linspace(-1 * bufferLength, length + bufferLength, 
                 len(self.scaledPoints))
 
-        #print("after initial scaling: y min/max = ", min(self.scaledPoints), " ", 
-        #        max(self.scaledPoints))
-        """
-        plt.plot(self.scaledXPoints, self.scaledPoints)
-        plt.xlim(-1 * bufferLength, length + bufferLength)
-        plt.ylim(-1 * bufferLength, length + bufferLength)
-        plt.show()
-        """
-        
         # do secondary transformation of y values
-        for i in range(self.numPoints):
-            r = np.random.uniform(0.99, 1)
-            self.scaledPoints[i] = self.scaledPoints[i] * (r ** 1) # from paper
-
-        #print("after multiplying by r^3: y min/max = ", min(self.scaledPoints), " ", 
-        #        max(self.scaledPoints))
-        """
-        plt.plot(self.scaledXPoints, self.scaledPoints)
-        plt.xlim(0, length)
-        plt.ylim(0, length)
-        plt.show()
-        """
-        
-        # do tertiary transformation of y values
         tempMin = min(self.scaledPoints)
         tempMax = max(self.scaledPoints)
-        # temp copy for comparison later
-        tempCopy = self.scaledPoints.copy()
         for i in range(self.numPoints):
-            #print("point before: ", point)
             v = np.random.uniform(-1 * tempMin, length - tempMax)
-            #print("v = ", v)
             self.scaledPoints[i] = self.scaledPoints[i] + v
-            #print("point after: ", point)
-        #print("did anything change? diff vector: ", tempCopy - self.scaledPoints)
 
-        #print("after adding v: y min/max = ", min(self.scaledPoints), " ", 
-        #        max(self.scaledPoints))
-        
-        """
-        plt.plot(self.scaledXPoints, self.scaledPoints)
-        plt.xlim(0, length)
-        plt.ylim(0, length)
-        plt.show()
-        """
-        
         # feed y-values through Gaussian filter function (per paper)
-        # guess 1 for SD..not listed in paper
         self.scaledPoints = gaussian_filter(self.scaledPoints, sigma=3)
-
-        # interested to see what the range of y values is after filtering
-        #print("after filtering: y min/max = ", min(self.scaledPoints), " ", 
-        #        max(self.scaledPoints))
 
         # fit quintic polynomial to data
         # make it a self attribute for reference in constraint function
         self.poly_coeff = np.polyfit(self.scaledXPoints, self.scaledPoints, 5)
 
-        """
-        plt.plot(self.scaledXPoints, self.scaledPoints)
-        plt.xlim(0, length)
-        plt.ylim(0, length)
-        plt.show()
-        """
-        
         # store the function output at each x in place of the scaled y-values
         for i in range(self.numPoints):
             self.scaledPoints[i] = self.quintic(self.scaledXPoints[i])
             
-        # experimental: add shift to curve to create better distribution
+        # add shift to curve to create better distribution
         self.y_rand = np.random.uniform(-1 * length / 2, 0)
         self.scaledPoints = self.scaledPoints  + self.y_rand
 
@@ -264,20 +213,6 @@ class PinkNoiseWire(StraightWire):
         y_r = length / 2
         self.x_rotated, self.y_rotated = self.rotateXY(self.scaledXPoints, 
                 self.scaledPoints, x_r, y_r, self.theta)
-        # don't rotate for now
-        #self.x_rotated = self.scaledXPoints
-        #self.y_rotated = self.scaledPoints
-        #self.theta = 0
-        #print("After rotation:")
-        #print("x min/max: ", min(self.x_rotated), " ", max(self.x_rotated))
-        #print("y min/max: ", min(self.y_rotated), " ", max(self.y_rotated))
-
-        """
-        plt.plot(self.x_rotated, self.y_rotated)
-        plt.xlim(0, length)
-        plt.ylim(0, length)
-        plt.show()
-        """
 
         # check for electrode connectivity while you have access to the
         # coefficient array from the polynomial fit
@@ -328,11 +263,9 @@ class PinkNoiseWire(StraightWire):
             # get electrode radius
             rad_e = electrode.getRadius()
 
-            #"""
             # get roots of polynomial
             rootSol = minimize(self.d_squared, method='Nelder-Mead', x0=0) 
             roots = rootSol.x
-            #roots = self.g()
             if len(roots) == 0:
                 print("no real roots found!")
             
@@ -348,15 +281,11 @@ class PinkNoiseWire(StraightWire):
                 # get rotated x and y
                 x_rot, y_rot = self.rotateXY([root], [y_temp],
                         self.x_r, self.y_r, self.theta)
-                #print("candidate rotated points for electrode at:")
-                #print(self.x_e, ", ", self.y_e, ": ")
-                #print("x_rot, y_rot: ", x_rot, ", ", y_rot)
 
                 # compute distance between electrode center
                 # and rotated x and y from root
                 dist = math.sqrt( (x_rot[0] - self.x_e) ** 2 + \
                         (y_rot[0] - self.y_e) ** 2 )
-                #print("distance to this electrode: ", dist)
 
                 # check condition
                 if dist <= rad_e:
@@ -365,135 +294,7 @@ class PinkNoiseWire(StraightWire):
                     # no need to check other roots for this 
                     # same electrode
                     break
-                #"""
-            """
-            for i in range(self.numPoints):
-                if (self.x_rotated[i] <= self.x_e + rad_e and
-                        self.x_rotated[i] >= self.x_e - rad_e and
-                        self.y_rotated[i] <= self.y_e + rad_e and
-                        self.y_rotated[i] >= self.y_e - rad_e):
-                    self.connectedElectrodes.append(electrode)
-                    print("this is saying that the rotated poly point at: ")
-                    print("(", self.x_rotated[i], ", ", self.y_rotated[i], ")")
-                    print("is within the electrode centered at:")
-                    print("(", self.x_e, ", ", self.y_e, ")")
-                    print("with radius ", rad_e)
-                    break
-            """
                     
-
-    # define polynomial to find roots of for distance calculation
-    """
-    def g(self):
-        # term for x_rot - x_e
-        x_term = [-self.poly_coeff[0] * math.sin(self.theta),
-                -self.poly_coeff[1] * math.sin(self.theta),
-                -self.poly_coeff[2] * math.sin(self.theta),
-                -self.poly_coeff[3] * math.sin(self.theta),
-                -self.poly_coeff[4] * math.sin(self.theta) + math.cos(
-                    self.theta),
-                -self.poly_coeff[5] * math.sin(self.theta) + \
-                        self.y_r * math.sin(self.theta) - \
-                        self.x_r * math.cos(self.theta) + \
-                        self.x_r - self.x_e]
-        #print("x term coefficients: ", x_term)
-
-        # term for f(x) - y_e
-        y_term = [self.poly_coeff[0] * math.cos(self.theta),
-                self.poly_coeff[1] * math.cos(self.theta),
-                self.poly_coeff[2] * math.cos(self.theta),
-                self.poly_coeff[3] * math.cos(self.theta),
-                self.poly_coeff[4] * math.cos(self.theta) + math.sin(
-                    self.theta), 
-                self.poly_coeff[5] * math.cos(self.theta) - self.y_r * \
-                        math.cos(self.theta) - self.x_r * math.sin(self.theta) \
-                        + self.y_r - self.y_e]
-        #print("y term coefficients: ", y_term)
-
-        # to get the coefficients for the f_prime term,
-        # build the f(x) polynomial object
-        f = np.poly1d(y_term)
-        # now take the derivative
-        f_prime = f.deriv()
-        # multiply the two polynomials together
-        product = np.polymul(f, f_prime)
-        # get the coefficients of the resulting term
-        product_coeff = product.c
-        #print("product coefficients: ", product_coeff)
-        # note that the resulting polynomial is a 9th order polynomial
-        # need to add the coefficients for powers 5-0 from the x term
-        product_coeff[4] = product_coeff[4] + x_term[0]
-        product_coeff[5] = product_coeff[5] + x_term[1]
-        product_coeff[6] = product_coeff[6] + x_term[2]
-        product_coeff[7] = product_coeff[7] + x_term[3]
-        product_coeff[8] = product_coeff[8] + x_term[4]
-        product_coeff[9] = product_coeff[9] + x_term[5]
-
-        # create the resulting final polynomial (g(x))
-        g_poly = np.poly1d(product_coeff)
-        # get its roots
-        roots = g_poly.r
-        print("all roots: ", roots)
-        # only keep its real roots
-        real_roots = [i.real for i in roots if abs(i.imag) < 0.00001]
-        print("real roots: ", real_roots)
-        print("check that each should return g = 0")
-        for root in real_roots:
-            print(g_poly(root))
-        # return the roots of this polynomial
-        return real_roots
-    """
-    """
-    def g(self):
-        # possibly switch terms in parenthesis in second term
-        a = (self.x_r - self.x_e) * math.cos(self.theta) + (self.y_e - self.y_r) * \
-                math.sin(self.theta) - self.x_r
-                
-        b = (self.y_r - self.y_e) * math.cos(self.theta) + (self.x_r - self.x_e) * \
-                math.sin(self.theta) - self.y_r
-
-        y_term = copy.deepcopy(self.poly_coeff)
-        # add beta term to constant coefficient
-        y_term[5] = y_term[5] + b
-
-        # create the two polynomial objects so you can multiply them together
-        f = np.poly1d(y_term)
-        # now take the derivative
-        f_prime = f.deriv()
-        # multiply them
-        product = np.polymul(f, f_prime)
-        # get coefficients of product
-        product_coeff = product.c
-
-        # now add the left terms to the resulting coefficients
-        # constant term:
-        product_coeff[9] = product_coeff[9] + a
-        # x term
-        product_coeff[8] = product_coeff[8] + 1
-        
-        # create the resulting final polynomial (g(x))
-        g_poly = np.poly1d(product_coeff)
-        # get its roots
-        roots = g_poly.r
-        #print("all roots: ", roots)
-        # only keep its real roots
-        real_roots = [i.real for i in roots if abs(i.imag) < 0.01]
-        #print("real roots: ", real_roots)
-        # return the roots of this polynomial
-        return real_roots
-    #"""
-                
-
-    # define function as part of minimization scheme
-    # this function just returns the rotated y value for an unrotated x
-    def rotateY(self, x):
-        # get unrotated y coordinate
-        y_temp = self.quintic(x)
-        # apply rotation matrix operation to y coordinate
-        r_y = (x - self.x_r) * math.sin(self.theta) + \
-                (y_temp - self.y_r) * math.cos(self.theta) + self.y_r
-        return r_y
-
     # now the function to minimize (square of distance)
     def d_squared(self, x):
         # get unrotated y coordinate
@@ -504,8 +305,7 @@ class PinkNoiseWire(StraightWire):
                 self.x_r, self.y_r, self.theta)
         return (rx_temp[0] - self.x_e) ** 2 + (ry_temp[0] - self.y_e) ** 2
         
-        
-
+    
     # method for printing useful info about the wire
     def __str__(self):
         temp = []
