@@ -6,7 +6,6 @@ sys.path.append(os.getcwd())
 # run.py - file to actually run
 from GeometricModel import GeometricModel
 from StraightWireModel import StraightWireModel
-from ArcWireModel import ArcWireModel
 from PinkNoiseModel import PinkNoiseModel
 from Electrode import Electrode
 from helpers import *
@@ -24,7 +23,7 @@ numPointsPerWire = 201 # from paper
 
 # sweep parameters for the square root of the number of electrodes
 num_e_min = 3
-num_e_max = 3
+num_e_max = 40
 
 # initialize array for small world coefficient parameters
 sigma_array = []
@@ -35,7 +34,7 @@ for root_num_e in range(num_e_min, num_e_max + 1):
     
     print("working on root_num_e = ", root_num_e)
     # initialize geometric model
-    model = PinkNoiseModel(density, r_e, alpha, root_num_e ** 2, 201)
+    model = PinkNoiseModel(density, r_e, alpha, root_num_e ** 2, numPointsPerWire, spacing=False)
     # plot geometric model
     model.plotModel()
     # generate equivalent bipartite graph
@@ -57,7 +56,7 @@ plotSmallWorldSweep(sigma_array, range(num_e_min, num_e_max + 1))
 
 """
 # create large network first
-model = PinkNoiseModel(density, r_e, alpha, 10 ** 2, numPointsPerWire)
+model = PinkNoiseModel(density, r_e, alpha, 128 ** 2, numPointsPerWire, spacing=True)
 # plot model
 model.plotModel()
 # generate equivalent bipartite graph
@@ -66,7 +65,7 @@ equivalentGraph = model.generateGraph()
 #plt.show()
 
 # sweep chemical distance and store N(r) in a vector
-r_vec = [1, 2, 3, 4, 5, 6]
+r_vec = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 N_vec = []
 
 

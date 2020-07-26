@@ -71,8 +71,6 @@ class StraightWireModel(GeometricModel):
         plt.xlim(0, self.length)
         plt.ylim(0, self.length)
         plt.savefig('GeometricModelPlot.png')
-        #plt.close()
-        plt.show()
 
     # generate equivalent bipartite graph
     def generateEquivalentBipartiteGraph(self):
