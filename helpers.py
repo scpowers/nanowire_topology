@@ -85,8 +85,8 @@ def computeSmallWorldCoefficient(L, C, L_r, C_r):
 
 # plot small world coefficient versus square root of electrode count
 def plotSmallWorldSweep(sigma_list, e_count_list):
-    plt.plot(e_count_list, sigma_list, '-o')
+    plt.plot(e_count_list, sigma_list)
     plt.xlabel(r'$\sqrt{n_e}$')
     plt.ylabel(r'$\sigma$')
-    plt.xticks([0, 10, 20, 30, 40, 50, 60])
+    plt.xticks([0, 20, 40])
     plt.savefig('sweep.png')

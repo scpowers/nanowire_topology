@@ -56,7 +56,7 @@ plotSmallWorldSweep(sigma_array, range(num_e_min, num_e_max + 1))
 
 """
 # create large network first
-model = PinkNoiseModel(density, r_e, alpha, 128 ** 2, numPointsPerWire, spacing=True)
+model = PinkNoiseModel(density, r_e, alpha, 16 ** 2, numPointsPerWire, spacing=True)
 # plot model
 model.plotModel()
 # generate equivalent bipartite graph
@@ -84,4 +84,4 @@ plt.loglog(r_vec, N_vec)
 plt.xlabel('r')
 plt.ylabel('N(r)')
 plt.savefig('N_vs_r_plot.png')
-#"""
+'''
