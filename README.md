@@ -1,3 +1,3 @@
 # Investigating the Topological Dimension of a Novel Manufacturing Method for Neuromorphic Hardware
 
-This repository contains the code behind my research report for PHYS 760 (Selected Topics in Computational Physics). The report (PDF) is also in the repository for reference. 
+This repository contains the code behind my research report for PHYS 760 (Selected Topics in Computational Physics). The report (PDF) is also in the repository for reference. The first goal of this summer project was to recreate the topological analysis of "Memristive nanowires exhibit small-world connectivity" by Pantone et al. (2018) from scratch. The second goal was to extend this analysis to include the topological dimension, which is of interest when determining the global network structure. 
